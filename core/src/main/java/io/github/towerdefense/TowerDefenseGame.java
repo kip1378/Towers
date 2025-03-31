@@ -4,6 +4,7 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 
@@ -14,19 +15,23 @@ import java.util.Set;
 
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class TowerDefenseGame extends ApplicationAdapter {
+
     private SpriteBatch batch;
-    private Texture tileRoad, tileEmpty;
-
     private Enemy enemy;
-    private Texture enemyTexture;
-    private float[][] path;
 
+    private Texture tileRoad, tileEmpty;
+    private Texture tileCastle;
+    private Texture enemyTexture;
+
+    private float[][] path;
+    private float castleX, castleY;
+    private boolean isGameOver = false;
 
 
     // карта 25x14 клеток
     private final int[][] map = {
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0},
@@ -40,6 +45,7 @@ public class TowerDefenseGame extends ApplicationAdapter {
         {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
     };
+
 
     private float[][] generatePathFromMap() {
         List<float[]> pathList = new ArrayList<>();
@@ -94,21 +100,38 @@ public class TowerDefenseGame extends ApplicationAdapter {
         return pathList.toArray(new float[0][]);
     }
 
+    public static void triggerGameOver() {
+        instance.isGameOver = true;
+    }
+    private static TowerDefenseGame instance;
+
 
     @Override
     public void create() {
+        instance = this;
         batch = new SpriteBatch();
         tileRoad = new Texture("road.png");   // это нужно будет добавить
         tileEmpty = new Texture("empty.png"); // и это тоже
+        tileCastle = new Texture("castle.png");
 
         path = generatePathFromMap();
+
+        float[] lastTile = path[path.length - 1];
+        castleX = lastTile[0];
+        castleY = lastTile[1];
+
+
         System.out.println("PATH SIZE = " + path.length);
 
         enemyTexture = new Texture("enemy.png");
 
         // Пример пути — массив координат по X и Y (пиксели)
         enemy = new Enemy(enemyTexture, path);
+
+
     }
+
+
 
     @Override
     public void render() {  //Автоматически вызывается LibGDX каждый кадр, т.е. ~60 раз в секунду.
@@ -129,9 +152,17 @@ public class TowerDefenseGame extends ApplicationAdapter {
                 //Чтобы корректно отрисовать карту, нужно «перевернуть» ось Y. поэтому -1
             }
         }
+        batch.draw(tileCastle, castleX-42, castleY, 120, 120);
         enemy.update(Gdx.graphics.getDeltaTime());
         enemy.render(batch);
         batch.end();
+        if (isGameOver) {
+            batch.begin();
+            BitmapFont font = new BitmapFont();
+            font.getData().setScale(5f); // увеличим размер шрифта
+            font.draw(batch, "GAME OVER", 500, 500); // позиция по центру экрана (подбери при необходимости)
+            batch.end();
+        }
     }
 
     @Override
